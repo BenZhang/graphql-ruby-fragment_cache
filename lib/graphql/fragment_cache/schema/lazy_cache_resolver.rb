@@ -18,6 +18,10 @@ module GraphQL
           @lazy_state[:pending_fragments] << @fragment
         end
 
+        def revisit(&block)
+          @revisit_block = block
+        end
+
         def resolve
           unless @lazy_state[:resolved_fragments].key?(@fragment)
             resolved_fragments = Fragment.read_multi(@lazy_state[:pending_fragments].to_a)
@@ -27,7 +31,8 @@ module GraphQL
 
           cached = @lazy_state[:resolved_fragments][@fragment]
 
-          if cached
+          if cached            
+            @revisit_block.call(cached) if @revisit_block
             return (cached == Fragment::NIL_IN_CACHE) ? nil : GraphQL::Execution::Interpreter::RawValue.new(cached)
           end
 

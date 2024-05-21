@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+
 require "spec_helper"
 
 describe GraphQL::FragmentCache::Schema::LazyCacheResolver do
@@ -56,5 +57,16 @@ describe GraphQL::FragmentCache::Schema::LazyCacheResolver do
     lazy_cache_resolver = GraphQL::FragmentCache::Schema::LazyCacheResolver.new({}, {}, {})
 
     expect(lazy_cache_resolver).to respond_to(:resolve)
+  end
+
+  it "should be able to modify the cache content by revisiting" do
+    allow(GraphQL::FragmentCache::Fragment).to receive(:read_multi).and_return({})
+    context = OpenStruct.new({fragments: [], lazy_cache_resolver_statez: {pending_fragments: Set.new, resolved_fragments: {'v1/framgment' => {id: 1}}}})
+
+    lazy_cache_resolver = GraphQL::FragmentCache::Schema::LazyCacheResolver.new('v1/framgment', context, {id: 1})
+    lazy_cache_resolver.revisit do |cached|
+      cached[:id] = 2
+    end
+    expect(lazy_cache_resolver.resolve.resolve[:id]).to eq(2)
   end
 end
